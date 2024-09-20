@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Pagination, Form } from 'react-bootstrap';
+import React, { useContext, useState, useEffect } from 'react';
+import { Table, Button, Pagination } from 'react-bootstrap';
 import axios from 'axios';
 import CategoryModal from '../components/CategoryModal';
 import Success from '../components/Success';
 import Error from '../components/Error';
 import Navbar from '../components/Navbar';
 
+import { AppContext } from '../context/appContext';
 
 const CategoryList = () => {
+  const {state: { token }} = useContext(AppContext)
   const [categories, setCategories] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -46,7 +48,6 @@ const CategoryList = () => {
   const handleDelete = async (categoryId, categoryName) => {
     if (window.confirm(`¿Seguro que quieres eliminar la categoría ${categoryName}?`)) {
       try {
-        const token = localStorage.getItem('token');
         await axios.delete(`http://localhost:8000/api/V1/categories/${categoryId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -56,7 +57,7 @@ const CategoryList = () => {
         setError('');
         setCategories(categories.filter((category) => category.id !== categoryId));
       } catch (err) {
-        setError('Error al eliminar la categoría');
+        setError('Error al intentar eliminar la categoría');
         setSuccess('')
       }
     }
@@ -89,7 +90,9 @@ const CategoryList = () => {
       {error && <Error msg={error} />}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h1 className="mx-auto">Categorías</h1>
-        <Button variant="primary" onClick={handleCreate}>Crear Nueva Categoría</Button>
+        {token && 
+          <Button variant="primary" onClick={handleCreate}>Crear Nueva Categoría</Button>
+        }
       </div>
 
       <Table striped bordered hover>
@@ -97,7 +100,7 @@ const CategoryList = () => {
           <tr>
             <th>Nombre</th>
             <th>Descripción</th>
-            <th>Acciones</th>
+            {token && <th>Acciones</th>}
           </tr>
         </thead>
         <tbody>
@@ -105,10 +108,13 @@ const CategoryList = () => {
             <tr key={category.id}>
               <td>{category.name}</td>
               <td>{category.description}</td>
-              <td>
-                <Button variant="primary" onClick={() => handleEdit(category)}>Editar</Button>{' '}
-                <Button variant="danger" onClick={() => handleDelete(category.id, category.name)}>Eliminar</Button>
+              {token && 
+                <td>
+                  <Button variant="primary" onClick={() => handleEdit(category)}>Editar</Button>{' '}
+                  <Button variant="danger" onClick={() => handleDelete(category.id, category.name)}>Eliminar</Button>
               </td>
+              }
+              
             </tr>
           ))}
         </tbody>
@@ -126,7 +132,6 @@ const CategoryList = () => {
         category={selectedCategory}
         refreshCategories={getCategoriesData}
         setSuccess={setSuccess}
-        setError={setError}
         isEdit={isEdit}
       />
     </div>

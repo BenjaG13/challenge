@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
@@ -6,9 +6,11 @@ import Navbar from '../components/Navbar';
 import Success from '../components/Success';
 import Error from '../components/Error';
 import ProductModal from '../components/ProductModal';
+import { AppContext } from '../context/appContext';
 
 
 const ProductDetail = () => {
+  const {state: { token }} = useContext(AppContext)
   const { id } = useParams(); // Obtener el ID del producto desde la URL
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true); 
@@ -50,26 +52,23 @@ const ProductDetail = () => {
   const handleCloseModal = () => {
     setShowModal(false); 
     setSelectedProduct(null); 
+    
   };
 
   const refresh = (product) => {
     console.log(product)
-    navigate('/', { replace: true }); // Navegar a la página raíz
-    setTimeout(() => {
-    navigate(`/products/${id}`, { replace: true }); // Redirigir nuevamente a la URL actual
-  }, 0); // Pue
+    fetchProduct(product)
   }
 
   const handleDelete = async () => {
     if (window.confirm(`¿Seguro que quieres eliminar el producto ${product.name}?`)) {
       try {
-        const token = localStorage.getItem('token'); 
         await axios.delete(`http://localhost:8000/api/V1/products/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`, 
           },
         });
-        navigate('/'); // Redirigir a la lista de productos después de eliminar
+        navigate('/', { state: { successState: `el producto ${product.name} fue eliminado exitosamente` } }); // Redirigir a la lista de productos después de eliminar
       } catch (err) {
         console.error('Error al eliminar el producto', err);
         setError('Ha ocurrido un error al eliminar el producto');
@@ -91,7 +90,9 @@ const ProductDetail = () => {
       {success && <Success msg={success} />}
       {error && <Error msg={error} />}
       <Container className="my-5">
-      <Button variant="primary" onClick={handleCreate}>Crear Nuevo Producto</Button>
+      {token && 
+          <Button variant="primary" onClick={handleCreate}>Crear Nuevo Producto</Button>
+      }
         <Row className="justify-content-center">
           <Col md={6}>
             <Card>
@@ -112,12 +113,16 @@ const ProductDetail = () => {
                   <strong>Categoria:</strong> {product.category.name}
                 </Card.Text>
                 <div className="d-flex justify-content-between">
+                {token && 
+                <>
                   <Button variant="primary" onClick={() => handleEdit(product)}>
                     Editar
                   </Button>
                   <Button variant="danger" onClick={handleDelete}>
                     Eliminar
                   </Button>
+                </>
+                }
                 </div>
               </Card.Body>
             </Card>
@@ -130,7 +135,6 @@ const ProductDetail = () => {
           product={selectedProduct}
           refreshProducts={refresh} // funcion para refrescar los productos
           setSuccess={setSuccess} 
-          setError={setError} 
           isEdit={isEdit}
         />
     </>

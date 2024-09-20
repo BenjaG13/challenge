@@ -75,4 +75,18 @@ class CategoryController extends Controller
     {
         $category->delete();
     }
+
+    public function getProductDistribution()
+    {
+        $categories = Category::withCount('products')->get();
+    
+        $data = $categories->map(callback: function ($category) {
+            return [
+                'name' => $category->name,
+                'total' => $category->products_count, 
+            ];
+        });
+    
+        return response()->json($data);
+    }
 }

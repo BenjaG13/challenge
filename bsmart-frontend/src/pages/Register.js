@@ -1,39 +1,35 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import axios from 'axios';
-import Success from '../components/Success';
 import Error from '../components/Error';
 import Navbar from '../components/Navbar';
+import { useNavigate } from 'react-router-dom';
+
+
+import { AppContext } from '../context/appContext';
 
 const RegisterForm = () => {
+  const {setToken} = useContext(AppContext)
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Realizar la petición POST al endpoint de registro
       const response = await axios.post('http://localhost:8000/api/V1/register', {
         name: username,
         email: email,
         password: password
       });
-      // Guardar el token de acceso en el local storage si es necesario
-      localStorage.setItem('token', response.data.access_token);
-
-       // Limpiar el formulario después del registro exitoso
-      setUsername('');
-      setEmail('');
-      setPassword('');
-      setSuccess('Register exitoso');
-      setError('');
+      const token = response.data.acces_token
+      setToken(token)
+      navigate('/')
     } catch (err) {
-      // Manejar errores (como validaciones fallidas)
-      console.error()
-      setError('A ocurrido un error');
-      setSuccess('');
+      console.error(err.response.data.errors);
+      const firstKey = Object.keys(err.response.data.errors)[0];
+      setError(err.response.data.errors[firstKey]);
       }
   };
 
@@ -78,7 +74,6 @@ const RegisterForm = () => {
           </div>
         </div>
       </form>
-      {success && <Success msg={success}/>}
       {error && <Error msg={error}/>}
     </div>
     </>

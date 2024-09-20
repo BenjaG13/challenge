@@ -7,10 +7,13 @@ import Login from './pages/Login';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import CategoryList from "./pages/CategoryList";
 import ProductList from "./pages/Dashboard";
+import { AppProvider } from "./context/appContext";
+
 
 function App() {
   return (
     <div>
+      <AppProvider>
         <Router>
           <Routes>
             <Route path="/" element={<ProductList />} />
@@ -20,6 +23,7 @@ function App() {
             <Route path="/categories" element={<CategoryList />} />
           </Routes>
         </Router>
+        </AppProvider>
     </div>
   );
 }

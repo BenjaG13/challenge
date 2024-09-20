@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Table, Button, Pagination, Form } from 'react-bootstrap';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Success from '../components/Success';
 import Error from '../components/Error';
 import Navbar from '../components/Navbar';
 import ProductModal from '../components/ProductModal';
-import CategoryModal from '../components/CategoryModal';
+import PieChart from '../components/Chart';
 import axios from 'axios';
+import { AppContext } from '../context/appContext';
+
 
 const ProductList = () => {
+  const {state: { token }} = useContext(AppContext)
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -17,10 +20,12 @@ const ProductList = () => {
   const [perPage, setPerPage] = useState(10);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showModal, setShowModal] = useState(false); // Estado para controlar el modal
+  const [showModal, setShowModal] = useState(false); 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEdit, setIsEdit] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
 
   const getProductsData = async () => {
     try {
@@ -42,16 +47,14 @@ const ProductList = () => {
   const handleDelete = async (productId, productName) => {
     if (window.confirm(`¿Seguro que quieres eliminar el producto ${productName}?`)) {
       try {
-        const token = localStorage.getItem('token');
-        console.log(token) // Obtener el token almacenado
         await axios.delete(`http://localhost:8000/api/V1/products/${productId}`, {
           headers: {
-            Authorization: `Bearer ${token}`, // Pasar el token en los headers
+            Authorization: `Bearer ${token}`, 
           },
         });
         // Actualizar la lista de productos después de la eliminación
         setProducts(products.filter((product) => product.id !== productId));
-        setSuccess(`El producto ${productName} ha sido eliminado`);
+        setSuccess(`El producto ${productName} fue eliminado exitosamente`);
         setError('');
       } catch (err) {
         console.error('Error al eliminar el producto', err);
@@ -78,6 +81,13 @@ const ProductList = () => {
   };
 
   useEffect(() => {
+    const { successState } = location.state || {};
+    if (successState){
+      setSuccess(successState)
+    }
+  }, [] );
+
+  useEffect(() => {
     getProductsData();
   }, [page, sortBy, sortOrder, perPage]);
 
@@ -102,16 +112,20 @@ const ProductList = () => {
   return (
     <div>
       <Navbar />
+      <PieChart  updateChart={products}/>
       {success && <Success msg={success} />}
       {error && <Error msg={error} />}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h1 className="mx-auto">Productos</h1>
-        <Button className="ml-3" variant="primary" onClick={handleCreate}>
-          Crear Nuevo Producto
-        </Button>
-        <Button className="ml-3" variant="secondary" onClick={() => navigate("/categories")}>
-          Administrar Categorías
-        </Button>
+        {token && 
+          <Button className="ml-3" variant="primary" onClick={handleCreate}>
+           Crear Nuevo Producto
+          </Button>
+        }
+          <Button className="ml-3" variant="secondary" onClick={() => navigate("/categories")}>
+             Categorías
+          </Button>
+      
       </div>
 
       <Form.Group controlId="sortOrder">
@@ -138,7 +152,7 @@ const ProductList = () => {
             <th>Nombre</th>
             <th>Precio</th>
             <th>Categoria</th>
-            <th>Acciones</th>
+            {token && <th>Acciones</th>}
           </tr>
         </thead>
         <tbody>
@@ -150,10 +164,12 @@ const ProductList = () => {
               </td>
               <td>{product.price}</td>
               <td>{product.category.name}</td> 
-              <td>
-                <Button variant="primary" onClick={() => handleEdit(product)}>Editar</Button>{' '}
-                <Button variant="danger" onClick={() => handleDelete(product.id, product.name)}>Eliminar</Button>
-              </td>
+              {token && 
+                <td>
+                  <Button variant="primary" onClick={() => handleEdit(product)}>Editar</Button>{' '}
+                  <Button variant="danger" onClick={() => handleDelete(product.id, product.name)}>Eliminar</Button>
+                </td>
+              }
             </tr>
           ))}
         </tbody>

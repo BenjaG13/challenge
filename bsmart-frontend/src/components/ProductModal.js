@@ -1,13 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
+import Error from '../components/Error';
 import axios from 'axios';
 
-const ProductModal = ({ show, handleClose, product, refreshProducts, setSuccess, setError, isEdit }) => {
+
+const ProductModal = ({ show, handleClose, product, refreshProducts, setSuccess, isEdit }) => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [code, setCode] = useState('');
+  const [categories, setCategories] = useState([])
+  const [error, setError] = useState('');
+
+
+  useEffect(() => {
+    if (show) {
+      setError('');  
+    }
+  }, [show]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/V1/categories'); 
+        setCategories(response.data.data); 
+      } catch (err) {
+        console.error('Error al obtener categorías', err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // rellenar el formulario si el producto existe (en modo de edición)
   useEffect(() => {
@@ -32,8 +55,9 @@ const ProductModal = ({ show, handleClose, product, refreshProducts, setSuccess,
             Authorization: `Bearer ${token}`,
           }
         });
-        setSuccess('Producto actualizado exitosamente');
         refreshProducts();
+        setSuccess('Producto actualizado exitosamente');
+        handleClose();
       } else {
         // Crear un nuevo producto si no estamos en modo edición
         await axios.post(`http://localhost:8000/api/V1/products`, productData, {
@@ -42,13 +66,14 @@ const ProductModal = ({ show, handleClose, product, refreshProducts, setSuccess,
           }
         });
         setSuccess('Producto creado exitosamente');
-        setError('')
+        refreshProducts();
       }
       handleClose(); // Cerrar el modal
     } catch (error) {
-      setError('Error al guardar el producto');
+      console.error(error);
+      const firstKey = Object.keys(error.response.data.errors)[0];
+      setError(error.response.data.errors[firstKey]);
       setSuccess('')
-      console.error('Error al guardar el producto', error);
     }
   };
 
@@ -58,6 +83,7 @@ const ProductModal = ({ show, handleClose, product, refreshProducts, setSuccess,
         <Modal.Title>{isEdit ? 'Actualizar Producto' : 'Crear Producto'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+        {error && <Error msg={error}/>}
         <Form>
           <Form.Group controlId="productName">
             <Form.Label>Nombre</Form.Label>
@@ -68,7 +94,7 @@ const ProductModal = ({ show, handleClose, product, refreshProducts, setSuccess,
             />
           </Form.Group>
           <Form.Group controlId="productPrice">
-            <Form.Label>Preciooo</Form.Label>
+            <Form.Label>Precio</Form.Label>
             <Form.Control
               type="number"
               value={price}
@@ -77,11 +103,17 @@ const ProductModal = ({ show, handleClose, product, refreshProducts, setSuccess,
           </Form.Group>
           <Form.Group controlId="productCategory">
             <Form.Label>Categoria</Form.Label>
-            <Form.Control
-              type="number"
+            <Form.Select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-            />
+            >
+              <option value="">Selecciona una categoría</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </Form.Select>
           </Form.Group>
           <Form.Group controlId="productDescription">
             <Form.Label>Descripcion</Form.Label>

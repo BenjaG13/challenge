@@ -25,8 +25,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Rutas públicas para los métodos GET
 Route::group(['prefix' => 'V1', 'namespace' => 'App\Http\Controllers'], function () {
     // Rutas GET accesibles sin autenticación
+    Route::get('categories/product-distribution', [CategoryController::class, 'getProductDistribution']);
     Route::get('products', [ProductController::class, 'index']);
-    Route::get('products/{product}', [ProductController::class, 'show']); // Agrega esta ruta
+    Route::get('products/{product}', [ProductController::class, 'show']); 
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('categories/{category}', [CategoryController::class, 'show']);
     

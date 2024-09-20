@@ -1,10 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
+import Error from '../components/Error';
 import axios from 'axios';
 
-const CategoryModal = ({ show, handleClose, category, refreshCategories, setSuccess, setError, isEdit }) => {
+import { AppContext } from '../context/appContext';
+
+
+const CategoryModal = ({ show, handleClose, category, refreshCategories, setSuccess, isEdit }) => {
+  const {state: { token }} = useContext(AppContext)
   const [name, setName] = useState(category ? category.name : '');
   const [description, setDescription] = useState(category ? category.name : '');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (show) {
+      setError('');  
+    }
+  }, [show]);
 
 
   useEffect(() => {
@@ -15,12 +27,12 @@ const CategoryModal = ({ show, handleClose, category, refreshCategories, setSucc
       setName('');
       setDescription('');
     }
+    setError('')
   }, [category]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
       if (isEdit) {
         await axios.put(`http://localhost:8000/api/V1/categories/${category.id}`, { name, description }, config);
@@ -33,7 +45,8 @@ const CategoryModal = ({ show, handleClose, category, refreshCategories, setSucc
       handleClose();
     } catch (error) {
       console.error(error);
-      setError('Error al guardar la categoría');
+      const firstKey = Object.keys(error.response.data.errors)[0];
+      setError(error.response.data.errors[firstKey]);
     }
   };
 
@@ -43,6 +56,7 @@ const CategoryModal = ({ show, handleClose, category, refreshCategories, setSucc
         <Modal.Title>{isEdit ? 'Editar Categoría' : 'Crear Nueva Categoría'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
+      {error && <Error msg={error}/>}
         <Form onSubmit={handleSubmit}>
           <Form.Group controlId="formCategoryName">
             <Form.Label>Nombre de la Categoría</Form.Label>
@@ -51,7 +65,7 @@ const CategoryModal = ({ show, handleClose, category, refreshCategories, setSucc
               placeholder="Nombre"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
+              // required
             />
           </Form.Group>
           <Form.Group controlId="formCategoryDescription">
